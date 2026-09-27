@@ -13,6 +13,15 @@ export type VideoMeta = {
 
 const UPLOAD_DIR = path.join(process.cwd(), "uploads");
 const hasBlob = () => Boolean(process.env.BLOB_READ_WRITE_TOKEN);
+const isVercel = () => Boolean(process.env.VERCEL);
+
+function assertLocalStorageAllowed() {
+  if (isVercel() && !hasBlob()) {
+    throw new Error(
+      "Vercel Blob is required in production. In the Vercel dashboard go to Storage → Create Blob Store → Connect it to this project, then Redeploy."
+    );
+  }
+}
 
 async function ensureUploadDir() {
   await mkdir(UPLOAD_DIR, { recursive: true });
@@ -64,6 +73,8 @@ export async function saveVideo(id: string, file: File): Promise<VideoMeta> {
 
     return meta;
   }
+
+  assertLocalStorageAllowed();
 
   await ensureUploadDir();
   const ext = extFromType(contentType, filename);
@@ -128,6 +139,7 @@ export async function listVideos(): Promise<VideoMeta[]> {
   }
 
   try {
+    assertLocalStorageAllowed();
     await ensureUploadDir();
     const files = await readdir(UPLOAD_DIR);
     const jsonFiles = files.filter((f) => f.endsWith(".json"));

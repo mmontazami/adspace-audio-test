@@ -24,11 +24,14 @@ Locally, files are stored in `uploads/` — no Blob token needed.
 
 ## Deploy on Vercel
 
-1. Connect the repo to Vercel
-2. Create a **Blob Store** (Storage → Blob) and link it to the project so `BLOB_READ_WRITE_TOKEN` is set
-3. Deploy
+Uploads on Vercel **require Blob storage**. The serverless filesystem cannot create `/uploads`.
 
-Without Blob, uploads will not persist on Vercel (serverless filesystem is ephemeral).
+1. Open the project in the [Vercel dashboard](https://vercel.com/dashboard)
+2. Go to **Storage** → **Create** → **Blob**
+3. Connect that Blob store to this project (this sets `BLOB_READ_WRITE_TOKEN`)
+4. **Redeploy** the project (important — env vars apply on new deploys)
+
+Without Blob you will get an error instead of `ENOENT mkdir uploads`.
 
 ### Size limit
 
