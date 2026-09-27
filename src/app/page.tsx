@@ -17,12 +17,9 @@ export default function HomePage() {
   const [uploading, setUploading] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [shortUrl, setShortUrl] = useState<string | null>(null);
-  const [pasteCountdown, setPasteCountdown] = useState<number | null>(null);
-  const [pasteTarget, setPasteTarget] = useState<string | null>(null);
   const [videos, setVideos] = useState<VideoMeta[]>([]);
   const [listLoading, setListLoading] = useState(true);
   const [origin, setOrigin] = useState("");
-  const pasteTimerRef = useRef<ReturnType<typeof setInterval> | null>(null);
 
   const loadVideos = useCallback(async () => {
     try {
@@ -39,9 +36,6 @@ export default function HomePage() {
   useEffect(() => {
     setOrigin(window.location.origin);
     void loadVideos();
-    return () => {
-      if (pasteTimerRef.current) clearInterval(pasteTimerRef.current);
-    };
   }, [loadVideos]);
 
   const fileLabel = useMemo(() => {
@@ -58,8 +52,6 @@ export default function HomePage() {
   const onPick = useCallback((next: File | null | undefined) => {
     setError(null);
     setShortUrl(null);
-    setPasteCountdown(null);
-    setPasteTarget(null);
     if (!next) return;
     if (!next.type.startsWith("video/")) {
       setError("Please select a video file.");
@@ -73,8 +65,6 @@ export default function HomePage() {
     setUploading(true);
     setError(null);
     setShortUrl(null);
-    setPasteCountdown(null);
-    setPasteTarget(null);
 
     try {
       const body = new FormData();
@@ -105,42 +95,13 @@ export default function HomePage() {
     window.location.assign(`${url}?via=click`);
   }, []);
 
-  const openLikePaste = useCallback(
-    async (url: string) => {
-      if (pasteCountdown !== null) return;
-
-      try {
-        await navigator.clipboard.writeText(url);
-      } catch {
-        // Clipboard may fail without permission; navigation test still continues.
-      }
-
-      let left = 5;
-      setPasteTarget(url);
-      setPasteCountdown(left);
-
-      if (pasteTimerRef.current) clearInterval(pasteTimerRef.current);
-      pasteTimerRef.current = setInterval(() => {
-        left -= 1;
-        if (left <= 0) {
-          if (pasteTimerRef.current) clearInterval(pasteTimerRef.current);
-          pasteTimerRef.current = null;
-          window.location.assign(`${url}?via=paste`);
-          return;
-        }
-        setPasteCountdown(left);
-      }, 1000);
-    },
-    [pasteCountdown]
-  );
-
   return (
     <main>
       <div className="badge">AUTOPLAY + SOUND TEST</div>
       <h1>Upload a video, get a short link</h1>
       <p className="lead">
-        Upload a video, then compare the two open modes: same-tab click (gesture)
-        vs delayed open (like copy-paste, no gesture).
+        Upload a video, open it with a click (gesture), or copy the link and paste
+        it yourself to test autoplay without a gesture.
       </p>
 
       <section className="panel">
@@ -197,33 +158,20 @@ export default function HomePage() {
               </button>
             </div>
 
-            <div className="test-grid">
-              <button
-                className="primary test-btn"
-                type="button"
-                onClick={() => openWithClick(shortUrl)}
-                disabled={pasteCountdown !== null}
-              >
-                Open in this tab (with click)
-              </button>
-              <button
-                className="ghost test-btn"
-                type="button"
-                onClick={() => openLikePaste(shortUrl)}
-                disabled={pasteCountdown !== null}
-              >
-                {pasteCountdown !== null && pasteTarget === shortUrl
-                  ? `Opening like paste in ${pasteCountdown}s...`
-                  : "Open like copy-paste (no gesture)"}
-              </button>
-            </div>
+            <button
+              className="primary test-btn"
+              type="button"
+              onClick={() => openWithClick(shortUrl)}
+            >
+              Open in this tab (with click)
+            </button>
 
             <p className="note">
               <strong>With click:</strong> navigates immediately in this tab — browser
               may allow sound.
               <br />
-              <strong>Like copy-paste:</strong> copies the link, waits 5s so the click
-              gesture expires, then opens — usually muted-only / blocked sound.
+              <strong>Manual paste:</strong> use Copy, paste the URL in the address
+              bar — usually muted-only / blocked sound.
             </p>
           </div>
         ) : null}
@@ -276,27 +224,13 @@ export default function HomePage() {
                       </button>
                     </div>
                   </div>
-                  <div className="test-grid">
-                    <button
-                      className="primary test-btn"
-                      type="button"
-                      onClick={() => openWithClick(link || `/${video.id}`)}
-                      disabled={pasteCountdown !== null}
-                    >
-                      Open with click
-                    </button>
-                    <button
-                      className="ghost test-btn"
-                      type="button"
-                      onClick={() => openLikePaste(link || `/${video.id}`)}
-                      disabled={pasteCountdown !== null}
-                    >
-                      {pasteCountdown !== null &&
-                      pasteTarget === (link || `/${video.id}`)
-                        ? `Paste-like in ${pasteCountdown}s...`
-                        : "Open like paste"}
-                    </button>
-                  </div>
+                  <button
+                    className="primary test-btn"
+                    type="button"
+                    onClick={() => openWithClick(link || `/${video.id}`)}
+                  >
+                    Open with click
+                  </button>
                 </li>
               );
             })}

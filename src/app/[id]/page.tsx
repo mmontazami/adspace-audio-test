@@ -21,8 +21,7 @@ function WatchPageInner() {
   const via = searchParams.get("via");
   const viaLabel = useMemo(() => {
     if (via === "click") return "Opened via: same-tab click (gesture)";
-    if (via === "paste") return "Opened via: delayed / paste-like (no gesture)";
-    return "Opened via: direct URL (unknown)";
+    return "Opened via: direct URL / paste (no gesture)";
   }, [via]);
 
   const [meta, setMeta] = useState<Meta | null>(null);
